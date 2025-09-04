@@ -1,7 +1,7 @@
 import decimal
 import datetime
 
-item_names = [("mango", 2, 12), ("grape", 4, 10)]
+item_names = []
 prices = []
 
 def generate_text_receipt(items, total_amount, date=datetime.date.today()):
@@ -44,6 +44,9 @@ def price_input(x: int):
     price = input(f"Enter price of item {x} (Items price must be numbers or decimals. ): ")
     try:
         price = float(price)
+        if price < 0:
+            print("ERROR: Price cannot be negative")
+            price = price_input(x)
     except ValueError:
         print("Invalid Input: Item price must be a number or decimal")
         return "Invalid Input"
@@ -54,10 +57,49 @@ def price_input(x: int):
             price = price_input(x)
         else:
             price = round(price, 2)
-            prices.append(price)
-    return price
+    return round(price, 2)
 
-price = price_input(3)
-# TODO: Write logic to handle commas
-if price != "Invalid Input":
-    generate_text_receipt(item_names, price)
+
+#adding items to cart
+def add_items():
+    total_amount = 0
+    global count
+    count = 0
+    while True:
+        name = name_input(count + 1)
+        price_before_tax = price_input(count + 1)
+
+        tax = calculate_tax(price_before_tax)
+        tax = round(tax, 2)
+        price_after_tax = price_before_tax + tax
+        total_amount += price_after_tax
+        
+        if total_amount <= 100:
+            item_names.append(name)
+            prices.append((price_before_tax, price_after_tax))
+        else:
+            print("ERROR: Your total has exceeded $100. Could not add {}".format(name))
+            total_amount -= price_after_tax
+            break
+        count += 1
+
+    remaining_balance = 100 - total_amount
+    print("Total Ammount: {}".format(total_amount))
+    print(f"Remaining balance: {round(remaining_balance, 2)}")
+    choice = input("Type c to checkout or s to continue shopping (c/s): ")
+    if choice == "s":
+        print(f"Please add items with prices not more than {remaining_balance}")
+        add_items()
+    else:
+        print("Checking out...")
+        generate_text_receipt(item_names, total_amount)
+
+
+        
+
+add_items()
+
+# price = price_input(3)
+# # TODO: Write logic to handle commas
+# if price != "Invalid Input":
+#     generate_text_receipt(item_names, price)
