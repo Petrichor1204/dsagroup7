@@ -1,142 +1,193 @@
-import decimal
 import datetime
+import decimal
 
-item_names = []
-prices = []
-quantities = []
+TAX_RATE = 0.1044
+BUDGET = 100.00
+BUDGET_WARN_THRESHOLD = 10.00  # warn when remaining <= $10
 
+class ShoppingCart:
+    def __init__(self):
+        self.items = []
+        self.total_amount = 0.0
 
-def generate_text_receipt(items, total_amount, date=datetime.date.today()):
-    print("----------------------------------------")
-    print("             WALMART            ")
-    print("----------------------------------------")
-    print(f"Date: {date}")
-    print("----------------------------------------")
-    print("Item            Qty   Price   Tax   Total")
-    print("----------------------------------------")
-    # for item, qty, price in items:
-    for item, quantity, price_before_tax, price_after_tax in items:
-        tax = price_after_tax - price_before_tax
-        item_price = price_before_tax/quantity
-        item_price = round(item_price, 2)
-        tax = round(tax, 2)
-        item_str = item.ljust(15)
-        qty_str = str(quantity).ljust(5)
-        price_before_tax_str = f"{price_before_tax:.2f}".ljust(7)
-        tax_str = f"{tax:.2f}".ljust(5)
-        total_item_str = f"{price_after_tax:.2f}"
-        print(f"{item_str}{qty_str}{price_str}{total_item_str}")
-    print("----------------------------------------")
-    print(f"Total: {total_amount:.2f}")
-    print("----------------------------------------")
+    def add_item(self, name, price, quantity):
+        price_before_tax = round(price * quantity, 2)
+        tax = self.calculate_tax(price_before_tax)
+        price_after_tax = round(price_before_tax + tax, 2)
 
+        if self.total_amount + price_after_tax > BUDGET:
+            remaining = self.get_remaining_balance()
+            print(f"\nERROR: Adding {name} would exceed your ${BUDGET:.2f} budget.")
+            print(f"Remaining balance: ${remaining:.2f}")
+            while True:
+                choice = input("Type 'c' to checkout or 'k' to keep shopping: ").strip().lower()
+                if choice == 'c':
+                    return "checkout"
+                if choice == 'k':
+                    return "keep_shopping"
+                print("Invalid choice. Enter 'c' or 'k'.")
 
-def calculate_tax(price):
-    tax_rate = 10.44 / 100
-    return price * tax_rate
+        # Update state
+        self.total_amount = round(self.total_amount + price_after_tax, 2)
+        self.items.append({
+            "name": name,
+            "price": round(price, 2),
+            "quantity": quantity,
+            "price_before_tax": price_before_tax,
+            "tax": tax,
+            "price_after_tax": price_after_tax
+        })
+        return "added"
 
-def name_input(x: int):
-    name = input(f"Enter name of item {x}: ")
-    try:
-        name = int(name)
-        print("Name cannot be a number")
-        name = name_input(x)
-    except ValueError:
-        # item_names.append(name)
-        return name
+    def remove_item(self, index):
+        if 0 <= index < len(self.items):
+            line = self.items.pop(index)
+            self.total_amount = round(self.total_amount - line["price_after_tax"], 2)
+            print(f"Removed '{line['name']}' (x{line['quantity']}).")
+            return True
+        print("Invalid index.")
+        return False
 
-def count_decimal_places_decimal(number):
-    d = decimal.Decimal(str(number))  # Convert to string to avoid float precision issues
-    return abs(d.as_tuple().exponent)
+    def calculate_tax(self, price):
+        return round(price * TAX_RATE, 2)
 
-def price_input(x: int):
-    price = input(f"Enter price of item {x} (Items price must be numbers or decimals. ): ")
-    try:
-        price = float(price)
-        if price < 0:
-            print("ERROR: Price cannot be negative")
-            price = price_input(x)
-        else:
-            if count_decimal_places_decimal(price) > 2:
-                print("WARNING: Item prices are rounded to 2 decimal places")
-                change_price = input("Change item price? (y/n): ")
-                if change_price == "y":
-                    price = price_input(x)
-                else:
-                    price = round(price, 2)
-            else:
-                price = round(price, 2)
+    def get_total(self):
+        return self.total_amount
 
-    except ValueError:
-        print("ERROR: Invalid Input. Item price must be a number or decimal")
-        price = price_input(x)
-    return round(price, 2)
+    def get_remaining_balance(self):
+        return round(BUDGET - self.total_amount, 2)
 
-def get_quantity(item_name):
-    quantity = input(f"Enter quantity of {item_name}: ")
-    try:
-        quantity = int(quantity)
-        if quantity < 0:
-            print("ERROR: Quantity cannot be negative")
-            quantity = get_quantity(item_name)
-        if quantity == 0:
-            print("WARNING: You have entered 0 for Quantity.\n")
-            remove_from_cart = input(f"Do you want to remove {item_name} from your cart? (y for yes): ")
-            if remove_from_cart == "y":
-                return 0
-            else:
-                quantity = get_quantity(item_name)
-        else:
-            return quantity
-    except ValueError:
-        print("ERROR: Invalid Input. Quantity must be a number")
-        quantity = get_quantity(item_name)
+    def get_totals_breakdown(self):
+        total_before_tax = round(sum(it["price_before_tax"] for it in self.items), 2)
+        total_tax = round(sum(it["tax"] for it in self.items), 2)
+        total_after_tax = round(total_before_tax + total_tax, 2)
+        item_count = sum(it["quantity"] for it in self.items)
+        return total_before_tax, total_tax, total_after_tax, item_count
 
-#adding items to cart
-def add_items():
-    total_amount = 0
-    global count
-    count = 0
+    def generate_receipt(self, date=datetime.date.today()):
+        total_before_tax, total_tax, total_after_tax, item_count = self.get_totals_breakdown()
+        lines = [
+            "----------------------------------------",
+            "             WALMART                    ",
+            "----------------------------------------",
+            f"Date: {date}",
+            "----------------------------------------",
+            "Item            Qty   Price    Tax      Line Total",
+            "----------------------------------------"
+        ]
+        for it in self.items:
+            lines.append(
+                f"{it['name']:<15} {it['quantity']:<5} ${it['price']:<7.2f} ${it['tax']:<7.2f} ${it['price_after_tax']:<7.2f}"
+            )
+        lines.extend([
+            "----------------------------------------",
+            f"Items purchased: {item_count}",
+            f"Subtotal (before tax): ${total_before_tax:.2f}",
+            f"Tax: ${total_tax:.2f}",
+            f"Total (after tax): ${total_after_tax:.2f}",
+            "----------------------------------------"
+        ])
+        return "\n".join(lines)
+
+def get_name_input(count):
     while True:
-        name = name_input(count + 1)
-        item_price = price_input(count + 1)
-        quantity = get_quantity(name)
-        price_before_tax = item_price * quantity
+        name = input(f"Enter name of item {count}: ")
+        try:
+            int(name)
+            print("Name cannot be a number")
+        except ValueError:
+            if not name.strip():
+                print("Name cannot be empty")
+            else:
+                return name.strip()
 
-        tax = calculate_tax(price_before_tax)
-        tax = round(tax, 2)
-        price_after_tax = price_before_tax + tax
-        total_amount += price_after_tax
-        if total_amount <= 100:
-            item_names.append(name)
-            prices.append((price_before_tax, price_after_tax))
+def get_price_input(name):
+    while True:
+        price_str = input(f"Enter price of {name} ({TAX_RATE*100:.2f}% tax is applied on all items): ")
+        try:
+            price = float(price_str)
+            if price < 0:
+                print("ERROR: Price cannot be negative")
+                continue
+            if abs(decimal.Decimal(price_str).as_tuple().exponent) > 2:
+                print("WARNING: Item prices are rounded to 2 decimal places")
+                if input("Change item price? (y/n): ").lower() == "y":
+                    continue
+            return round(price, 2)
+        except (ValueError, decimal.InvalidOperation):
+            print("ERROR: Invalid Input. Item price must be a number or decimal")
 
-            print("Remaining Balance: ${:.2f}".format(100 - total_amount))
-            print("----------------------------------------")        
-        else:
-            print("\nERROR: Your total has exceeded $100. Could not add {}".format(name))
-            total_amount -= price_after_tax
+def get_quantity_input(name):
+    while True:
+        quantity_str = input(f"Enter quantity of {name}: ")
+        try:
+            quantity = int(quantity_str)
+            if quantity < 0:
+                print("ERROR: Quantity cannot be negative")
+                continue
+            if quantity == 0:
+                print("WARNING: You entered 0 for quantity. Item will not be added.")
+                return 0
+            return quantity
+        except ValueError:
+            print("ERROR: Invalid Input. Quantity must be a number")
+
+def main():
+    cart = ShoppingCart()
+    item_count = 1
+
+    while True:
+        remaining = cart.get_remaining_balance()
+        print("\n--- Walmart Shopping System ---")
+        print(f"Remaining Balance: ${remaining:.2f}")
+        if remaining <= BUDGET_WARN_THRESHOLD and remaining > 0:
+            print("WARNING: You are close to your budget limit.")
+
+        print("1. Add item")
+        print("2. View / remove items")
+        print("3. Checkout")
+        print("4. Exit")
+        choice = input("Enter your choice: ").strip()
+
+        if choice == "1":
+            name = get_name_input(item_count)
+            price = get_price_input(name)
+            quantity = get_quantity_input(name)
+            if quantity > 0:
+                result = cart.add_item(name, price, quantity)
+                if result == "added":
+                    item_count += 1
+                    print(f"'{name}' added to cart.")
+                elif result == "checkout":
+                    print("\nChecking out...")
+                    print(cart.generate_receipt())
+                    break
+                # If result is "keep_shopping", we do nothing and the loop continues.
+        elif choice == "2":
+            print("\n--- Current Cart ---")
+            if not cart.items:
+                print("Your cart is empty.")
+            else:
+                for idx, it in enumerate(cart.items):
+                    print(f"{idx}. {it['name']} (x{it['quantity']}): ${it['price_after_tax']:.2f}")
+                print(f"Total: ${cart.get_total():.2f}")
+                if input("Remove an item? (y/n): ").strip().lower() == "y":
+                    try:
+                        rm_idx = int(input("Enter the index to remove: "))
+                        cart.remove_item(rm_idx)
+                    except ValueError:
+                        print("Invalid index.")
+        elif choice == "3":
+            print("\nChecking out...")
+            print(cart.generate_receipt())
             break
-        count += 1
+        elif choice == "4":
+            print("Exiting...")
+            break
+        else:
+            print("Invalid choice. Please try again.")
 
-    remaining_balance = 100 - total_amount
-    remaining_balance = round(remaining_balance, 2)
-    print(f"Remaining balance: {remaining_balance}")
-    choice = input("Type c to checkout or s to continue shopping (c/s): ")
-    if choice == "s":
-        print(f"Please add items with prices not more than {remaining_balance}")
-        add_items() # TODO: Fix this so that the remaning balance does not start afresh
-    elif choice == "c":
-        print("Checking out...")
-        # items = list(zip(item_names, prices))
-        items = [(item_names[i], prices[i]) for i in range(len(item_names))]
-        print("\nITEMS ARRAY:")
-        print(items)
-        print()
-        total_amount = round(total_amount, 2)
-        # generate_text_receipt(items, total_amount)
-    else:
-        print("Invalid Input")
-
-
-add_items()
+try:
+    main()
+except KeyboardInterrupt:
+    print("\nThank you for shopping with Walmart...")
