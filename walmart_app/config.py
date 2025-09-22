@@ -10,6 +10,7 @@ COLOR_PRIMARY = "#4060e1"
 # Fonts
 FONT_TITLE = ("Arial", 18, "bold")
 FONT_LABEL = ("Arial", 12, "bold")
+FONT_BODY = ("Arial", 12, "normal") # For general text, descriptions, etc.
 FONT_BUTTON = ("Arial", 14, "bold")
 
 # Walmart Logo

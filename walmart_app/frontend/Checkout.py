@@ -1,19 +1,7 @@
 import tkinter as tk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox
 from walmart_app.config import *
-from walmart_app.frontend.navbar import create_navbar
-
-# Dummy data for receipt
-DUMMY_RECEIPT = {
-    "store": "Walmart Shopping App",
-    "date": "2025-09-21",
-    "items": [
-        {"name": "Apples", "qty": 3, "price": 2.50},
-        {"name": "Grapes", "qty": 1, "price": 10.00},
-        {"name": "Bananas", "qty": 6, "price": 0.75},
-    ],
-    "total": 0.0,
-}
+from walmart_app.backend import db_helper
 
 
 class CheckoutPage(tk.Frame):
@@ -21,20 +9,27 @@ class CheckoutPage(tk.Frame):
         super().__init__(parent, bg=WINDOW_BG)
         self.controller = controller
 
-        # create_navbar(self)
-
         # Title
         tk.Label(
-            self, text="Checkout Receipt", font=FONT_TITLE, fg=COLOR_PRIMARY, bg=WINDOW_BG
+            self, text="CHECKOUT RECEIPT", font=FONT_TITLE, fg=COLOR_PRIMARY, bg=WINDOW_BG
         ).pack(pady=16)
 
-        # Receipt Frame
-        self.receipt_frame = tk.Frame(self, bg="white", bd=2, relief="solid")
-        self.receipt_frame.pack(pady=20, padx=40, fill="x")
+        # Scrollable receipt frame
+        canvas = tk.Canvas(self, bg=WINDOW_BG, highlightthickness=0)
+        scrollbar = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.receipt_frame = tk.Frame(canvas, bg=WINDOW_BG)
 
-        self.render_receipt(DUMMY_RECEIPT)
+        self.receipt_frame.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
 
-        # Action Buttons
+        canvas.create_window((0, 0), window=self.receipt_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True, padx=12, pady=12)
+        scrollbar.pack(side="right", fill="y")
+
+        # Action buttons
         btn_frame = tk.Frame(self, bg=WINDOW_BG)
         btn_frame.pack(pady=20)
 
@@ -51,65 +46,116 @@ class CheckoutPage(tk.Frame):
             btn_frame,
             text="Back to Home",
             font=FONT_BUTTON,
+            bg="#555",
+            fg="white",
             command=lambda: controller.show_page("HomePage"),
         ).pack(side="left", padx=10)
 
-    def render_receipt(self, data):
-        """Render receipt layout with dummy or real data."""
+        self.refresh()
+
+    def refresh(self):
+        """Clear and render receipt items."""
         for widget in self.receipt_frame.winfo_children():
             widget.destroy()
 
-        # Header
+        items = db_helper.get_cart_items()
+
+        if not items:
+            tk.Label(
+                self.receipt_frame,
+                text="No items in cart.",
+                font=FONT_LABEL,
+                bg=WINDOW_BG,
+                fg="gray",
+            ).pack(pady=20)
+            return
+
+        total_price = 0
+        total_items = 0
+
+        # Table header
+        header = tk.Frame(self.receipt_frame, bg=WINDOW_BG)
+        header.pack(fill="x", pady=(0, 6))
+        tk.Label(header, text="Item", font=FONT_LABEL, bg=WINDOW_BG, width=20).pack(
+            side="left", padx=6
+        )
+        tk.Label(header, text="Qty", font=FONT_LABEL, bg=WINDOW_BG, width=10).pack(
+            side="left", padx=6
+        )
+        tk.Label(header, text="Price", font=FONT_LABEL, bg=WINDOW_BG, width=10).pack(
+            side="left", padx=6
+        )
+        tk.Label(header, text="Subtotal", font=FONT_LABEL, bg=WINDOW_BG, width=12).pack(
+            side="left", padx=6
+        )
+
+        # Line items
+        for item in items:
+            name = item["name"]
+            qty = item["quantity"]
+            price = item["price"]
+            subtotal = qty * price
+
+            total_price += subtotal
+            total_items += qty
+
+            row = tk.Frame(self.receipt_frame, bg="white", bd=1, relief="solid")
+            row.pack(fill="x", pady=3)
+
+            tk.Label(row, text=name, font=FONT_BODY, bg="white", width=20, anchor="w").pack(
+                side="left", padx=6
+            )
+            tk.Label(row, text=str(qty), font=FONT_BODY, bg="white", width=10).pack(
+                side="left", padx=6
+            )
+            tk.Label(row, text=f"${price:.2f}", font=FONT_BODY, bg="white", width=10).pack(
+                side="left", padx=6
+            )
+            tk.Label(
+                row, text=f"${subtotal:.2f}", font=FONT_BODY, bg="white", width=12
+            ).pack(side="left", padx=6)
+
+        # Summary
+        summary = tk.Frame(self.receipt_frame, bg=WINDOW_BG)
+        summary.pack(fill="x", pady=12)
+
         tk.Label(
-            self.receipt_frame,
-            text=data["store"],
-            font=("Courier", 16, "bold"),
-            bg="white",
-        ).pack(pady=4)
+            summary,
+            text=f"Total Items: {total_items}",
+            font=FONT_LABEL,
+            bg=WINDOW_BG,
+        ).pack(side="left", padx=6)
+
         tk.Label(
-            self.receipt_frame, text=f"Date: {data['date']}", font=("Courier", 12), bg="white"
-        ).pack()
-
-        tk.Label(self.receipt_frame, text="-" * 40, font=("Courier", 12), bg="white").pack()
-
-        # Items
-        total = 0.0
-        for item in data["items"]:
-            line = f"{item['name']} (x{item['qty']})".ljust(25)
-            cost = f"${item['qty'] * item['price']:.2f}".rjust(10)
-            tk.Label(self.receipt_frame, text=line + cost, font=("Courier", 12), bg="white", anchor="w").pack(fill="x", padx=10)
-            total += item["qty"] * item["price"]
-
-        tk.Label(self.receipt_frame, text="-" * 40, font=("Courier", 12), bg="white").pack()
-
-        # Total
-        tk.Label(
-            self.receipt_frame,
-            text=f"TOTAL: ${total:.2f}",
-            font=("Courier", 14, "bold"),
-            bg="white",
-        ).pack(pady=6)
+            summary,
+            text=f"TOTAL: ${total_price:.2f}",
+            font=("Arial", 14, "bold"),
+            bg=WINDOW_BG,
+            fg=COLOR_PRIMARY,
+        ).pack(side="right", padx=6)
 
     def print_receipt(self):
-        """Simulate printing by saving to a text file (can extend to PDF later)."""
-        filepath = filedialog.asksaveasfilename(
-            defaultextension=".txt",
-            filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")],
-            title="Save Receipt",
-        )
-        if not filepath:
+        """Save receipt as text file (mock print)."""
+        items = db_helper.get_cart_items()
+        if not items:
+            messagebox.showinfo("Print", "No items to print.")
             return
 
         try:
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write("=== Walmart Shopping App Receipt ===\n")
-                f.write(f"Date: {DUMMY_RECEIPT['date']}\n\n")
-                for item in DUMMY_RECEIPT["items"]:
-                    f.write(f"{item['name']} (x{item['qty']}): ${item['qty'] * item['price']:.2f}\n")
-                f.write("\n")
-                total = sum(it["qty"] * it["price"] for it in DUMMY_RECEIPT["items"])
-                f.write(f"TOTAL: ${total:.2f}\n")
-                f.write("====================================\n")
-            messagebox.showinfo("Print", f"Receipt saved to {filepath}")
+            with open("receipt.txt", "w", encoding="utf-8") as f:
+                f.write("==== Walmart Checkout Receipt ====\n\n")
+                total = 0
+                for item in items:
+                    subtotal = item["quantity"] * item["price"]
+                    total += subtotal
+                    f.write(
+                        f"{item['name']} (x{item['quantity']}) - ${item['price']:.2f} → ${subtotal:.2f}\n"
+                    )
+                f.write(f"\nTOTAL: ${total:.2f}\n")
+                f.write("Thank you for shopping with us!\n")
+
+            messagebox.showinfo(
+                "Print", "Receipt saved as 'receipt.txt'.\n(Replace with real printer call.)"
+            )
         except Exception as e:
-            messagebox.showerror("Error", f"Could not save receipt: {e}")
+            messagebox.showerror("Print Error", str(e))
