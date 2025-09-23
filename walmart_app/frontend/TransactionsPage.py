@@ -1,7 +1,15 @@
 import tkinter as tk
+from tkinter import messagebox
+from pathlib import Path
+import datetime
+from openpyxl import Workbook
+
+import subprocess
+import os
+import sys
+
 from walmart_app.config import *
 from walmart_app.backend import db_helper
-
 
 class TransactionsPage(tk.Frame):
     """Page to display past transactions (order history)."""
@@ -29,6 +37,17 @@ class TransactionsPage(tk.Frame):
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+
+        # Download button
+        download_btn = tk.Button(
+            self,
+            text="Download History (Excel)",
+            font=FONT_BUTTON,
+            bg=COLOR_PRIMARY,
+            fg="white",
+            command=self.export_to_excel,
+        )
+        download_btn.pack(pady=(10, 20))
 
         self.refresh()
 
@@ -89,3 +108,70 @@ class TransactionsPage(tk.Frame):
                 bg="white",
                 fg=COLOR_PRIMARY,
             ).pack(anchor="e", padx=12, pady=(4, 6))
+
+    def export_to_excel(self):
+        transactions = db_helper.get_transactions()
+        if not transactions:
+            messagebox.showinfo("Export", "No transactions found to export.")
+            return
+
+        wb = Workbook()
+
+        # Sheet 1: Transactions
+        ws1 = wb.active
+        ws1.title = "Transactions"
+        ws1.append(["ID", "Cart ID", "Created At", "Subtotal", "Tax Total", "Grand Total"])
+
+        for tx in transactions:
+            ws1.append([
+                tx["id"],
+                tx.get("cart_id", ""),
+                tx["created_at"],
+                tx["subtotal"],
+                tx["tax_total"],
+                tx["grand_total"],
+            ])
+
+        # Sheet 2: Transaction Items
+        ws2 = wb.create_sheet("Transaction Items")
+        ws2.append(["ID", "Transaction ID", "Name", "Unit Price", "Quantity", "Tax Amount", "Line Total"])
+
+        for tx in transactions:
+            items = db_helper.get_transaction_items(tx["id"])
+            for item in items:
+                ws2.append([
+                    item["id"],
+                    tx["id"],
+                    item["name"],
+                    item["unit_price"],
+                    item["quantity"],
+                    item["tax_amount"],
+                    item["line_total"],
+                ])
+
+
+        downloads_path = Path.home() / "Downloads"
+        if not downloads_path.exists() or not os.access(downloads_path, os.W_OK):
+            # Fallback to current working directory if Downloads is not accessible
+            downloads_path = Path.cwd()
+
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = downloads_path / f"order_history_{timestamp}.xlsx"
+
+        try:
+            wb.save(filename)
+        except Exception as e:
+            messagebox.showerror("Save Failed", f"Could not save file:\n{str(e)}")
+            return
+
+        try:
+            if os.name == 'nt':  # Windows
+                os.startfile(filename)
+            elif sys.platform == 'darwin':  # macOS
+                subprocess.run(['open', str(filename)], check=True)
+            else:  # Linux and other Unix-like
+                subprocess.run(['xdg-open', str(filename)], check=True)
+        except Exception as e:
+            messagebox.showwarning("Open Failed", f"Saved successfully but could not open automatically:\n{str(e)}")
+
+        messagebox.showinfo("Export Successful", f"Order history exported to:\n{filename}")
