@@ -15,3 +15,5 @@ FONT_BUTTON = ("Arial", 14, "bold")
 
 # Walmart Logo
 WALMART_LOGO = "walmart_app/frontend/assets/walmart_logo.png"
+
+CART_ID = "9f0f3845-ba9d-4073-9f48-69c3dad65c40"

@@ -3,6 +3,7 @@ from walmart_app.frontend.home import HomePage
 from walmart_app.frontend.AddItem import AddItemPage
 from walmart_app.frontend.ViewCart import ViewCartPage
 from walmart_app.frontend.Checkout import CheckoutPage
+from walmart_app.frontend.TransactionsPage import TransactionsPage
 
 
 def run_app():
@@ -13,6 +14,7 @@ def run_app():
     app.add_page(AddItemPage, "AddItemPage")
     app.add_page(ViewCartPage, "ViewCartPage")
     app.add_page(CheckoutPage, "CheckoutPage")
+    app.add_page(TransactionsPage, "TransactionsPage")
 
     # Show home page first
     app.show_page("HomePage")

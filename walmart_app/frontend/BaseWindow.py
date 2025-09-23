@@ -81,6 +81,17 @@ class BaseWindow(tk.Tk):
             command=lambda: self.show_page("ViewCartPage"),
         ).pack(side=tk.RIGHT, padx=10)
 
+        # Transactions button
+        tk.Button(
+            navbar,
+            text="Transactions",
+            bg=nav_bar_color_bg,
+            fg=nav_bar_color_fg,
+            font=("Arial", 14),
+            borderwidth=0,
+            command=lambda: self.show_page("TransactionsPage"),
+        ).pack(side=tk.RIGHT, padx=10)
+
     def add_page(self, page_class, name):
         """Register a page by class."""
         frame = page_class(self.container, self)
@@ -95,6 +106,10 @@ class BaseWindow(tk.Tk):
         frame = self.frames[name]
         frame.tkraise()
         self.current_page = name
+
+        # Always refresh if page has a refresh method
+        if hasattr(frame, "refresh"):
+            frame.refresh()
 
         if add_to_history:
             # Cut forward history when new nav occurs
@@ -113,3 +128,4 @@ class BaseWindow(tk.Tk):
             self.history_index += 1
             page = self.history[self.history_index]
             self.show_page(page, add_to_history=False)
+
