@@ -89,13 +89,7 @@ class ViewCartPage(tk.Frame):
             qty_frame = tk.Frame(row, bg=WINDOW_BG)
             qty_frame.pack(side="left", padx=10)
 
-            tk.Button(
-                qty_frame,
-                text="-",
-                width=2,
-                command=lambda i=item_id: self.change_qty(i, -1),
-            ).pack(side="left")
-
+            # Qty label (pass this into change_qty)
             qty_label = tk.Label(
                 qty_frame,
                 text=str(qty),
@@ -106,11 +100,29 @@ class ViewCartPage(tk.Frame):
             )
             qty_label.pack(side="left", padx=4)
 
+            # Subtotal label (pass this too)
+            subtotal_label = tk.Label(
+                row,
+                text=f"${price * qty:.2f}",
+                font=FONT_BUTTON,
+                bg="white",
+                relief="solid",
+                width=10,
+            )
+            subtotal_label.pack(side="right", padx=8)
+
+            tk.Button(
+                qty_frame,
+                text="-",
+                width=2,
+                command=lambda i=item_id, ql=qty_label, sl=subtotal_label, p=price: self.change_qty(i, -1, ql, sl, p),
+            ).pack(side="left")
+
             tk.Button(
                 qty_frame,
                 text="+",
                 width=2,
-                command=lambda i=item_id: self.change_qty(i, +1),
+                command=lambda i=item_id, ql=qty_label, sl=subtotal_label, p=price: self.change_qty(i, +1, ql, sl, p),
             ).pack(side="left")
 
             # Item name
@@ -118,31 +130,38 @@ class ViewCartPage(tk.Frame):
                 side="left", padx=12
             )
 
-            # Price
-            tk.Label(
-                row,
-                text=f"${price:.2f}",
-                font=FONT_BUTTON,
-                bg="white",
-                relief="solid",
-                width=8,
-            ).pack(side="right", padx=8)
-
         self.summary_label.config(
             text=f"Total Items: {total_items}     TOTAL: ${total_price:.2f}"
         )
+
 
     # --- Item actions ---
     def remove_item(self, item_id):
         db_helper.remove_item(item_id)
         self.refresh()
 
-    def change_qty(self, item_id, delta):
+    def change_qty(self, item_id, delta, qty_label=None, subtotal_label=None, price=0.0):
         for item in self.items:
             if item["id"] == item_id:
                 new_qty = max(1, item["quantity"] + delta)
                 db_helper.update_item_qty(item_id, new_qty)
-        self.refresh()
+                item["quantity"] = new_qty  # keep local copy in sync
+
+                # Update UI labels live
+                if qty_label:
+                    qty_label.config(text=str(new_qty))
+                if subtotal_label:
+                    subtotal_label.config(text=f"${price * new_qty:.2f}")
+
+        # Update totals
+        self.update_summary()
+
+    def update_summary(self):
+        total_price = sum(it["price"] * it["quantity"] for it in self.items)
+        total_items = sum(it["quantity"] for it in self.items)
+        self.summary_label.config(
+            text=f"Total Items: {total_items}     TOTAL: ${total_price:.2f}"
+        )
 
     def checkout(self):
         if not self.items:
@@ -150,7 +169,7 @@ class ViewCartPage(tk.Frame):
             return
         total = sum(it["price"] * it["quantity"] for it in self.items)
         if messagebox.askyesno("Checkout", f"Confirm checkout — total ${total:.2f}?"):
-            db_helper.clear_cart()
+            # db_helper.clear_cart()
             # self.refresh()
             # messagebox.showinfo("Checkout", "Checkout complete — cart cleared")
             self.controller.show_page("CheckoutPage")
