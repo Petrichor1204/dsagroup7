@@ -88,21 +88,61 @@ class AddItemPage(tk.Frame):
         price = self.entry_price.get().strip()
         qty = self.entry_qty.get().strip()
 
+        # === 1. Required Fields ===
         if not name or not price or not qty:
             messagebox.showwarning("Input Error", "All fields are required!")
             return
 
-        try:
-            price_val = float(price)
-            qty_val = int(qty)
-        except ValueError:
-            messagebox.showwarning(
-                "Input Error", "Enter valid numeric values for price and quantity!"
-            )
+        # === 2. Validate Name ===
+        if len(name) < 2:
+            messagebox.showwarning("Input Error", "Item name must be at least 2 characters long!")
             return
 
+        if len(name) > 100:
+            messagebox.showwarning("Input Error", "Item name cannot exceed 100 characters!")
+            return
+
+        # Check if name is empty after stripping (e.g., all spaces)
+        if not name:
+            messagebox.showwarning("Input Error", "Item name cannot be empty or whitespace only!")
+            return
+
+        # Check if name is ONLY digits
+        if name.isdigit():
+            messagebox.showwarning("Input Error", "Item name cannot be only numbers!")
+            return
+
+        # Check if name is ONLY punctuation/symbols
+        if all(not c.isalnum() for c in name):
+            messagebox.showwarning("Input Error", "Item name cannot be only symbols or punctuation!")
+            return
+
+        # === 3. Validate Price ===
         try:
-            # Save to DB
+            price_val = float(price)
+            if price_val <= 0:
+                raise ValueError("Price must be positive")
+            if price_val > 999999.99:  # Set reasonable upper limit
+                messagebox.showwarning("Input Error", "Price too high! Max: $999,999.99")
+                return
+        except ValueError:
+            messagebox.showwarning("Input Error", "Enter a valid positive number for price (e.g., 5.99)!")
+            return
+
+        # === 4. Validate Quantity ===
+        try:
+            qty_val = int(qty)
+            if qty_val <= 0:
+                raise ValueError("Quantity must be positive")
+            if qty_val > 10000:  # Set reasonable upper limit
+                messagebox.showwarning("Input Error", "Quantity too high! Max: 10,000")
+                return
+        except ValueError:
+            messagebox.showwarning("Input Error", "Enter a valid positive integer for quantity (e.g., 3)!")
+            return
+
+        # === 5. Save to DB ===
+        try:
             db_helper.add_item(name, price_val, qty_val, tax_rate=0.1)
             messagebox.showinfo(
                 "Success",
@@ -110,7 +150,7 @@ class AddItemPage(tk.Frame):
             )
             self.reset_form()
         except Exception as e:
-            messagebox.showerror("Database Error", str(e))
+            messagebox.showerror("Database Error", f"Failed to save item: {str(e)}")
 
     def reset_form(self):
         self.entry_name.delete(0, tk.END)
