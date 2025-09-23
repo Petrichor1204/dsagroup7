@@ -165,7 +165,11 @@ def get_transaction_items(transaction_id):
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute(
-            "SELECT name, quantity, line_total FROM transaction_items WHERE transaction_id = ?",
+            """
+            SELECT id, name, unit_price, quantity, tax_amount, line_total
+            FROM transaction_items
+            WHERE transaction_id = ?
+            """,
             (transaction_id,),
         )
         return [dict(row) for row in cur.fetchall()]
