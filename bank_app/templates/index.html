@@ -1,185 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Bank Loan Manager</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f8fafc;
-            margin: 0;
-            padding: 20px;
-            color: #1e293b;
-        }
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 25px;
-            color: #0f172a;
-        }
-        .form-group {
-            margin-bottom: 18px;
-        }
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        button {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-size: 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-        button:hover {
-            background: #2563eb;
-        }
-        #result {
-            margin-top: 25px;
-            padding: 16px;
-            border-radius: 8px;
-            display: none;
-        }
-        .approved { background: #dcfce7; color: #166534; }
-        .rejected { background: #fee2e2; color: #991b1b; }
-        .actions {
-            margin-top: 15px;
-        }
-        .actions button {
-            width: auto;
-            margin-right: 10px;
-            margin-top: 0;
-        }
-        .hidden { display: none; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bank Loan Manager</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
+    .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h1 { text-align: center; margin-bottom: 25px; color: #0f172a; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+    button { background: #3b82f6; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
+    button:hover { background: #2563eb; }
+    #result { margin-top: 25px; padding: 16px; border-radius: 8px; display: none; }
+    .approved { background: #dcfce7; color: #166534; }
+    .rejected { background: #fee2e2; color: #991b1b; }
+    .actions { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .actions button { width: auto; margin-top: 0; }
+    .small { font-size: 14px; opacity: 0.9; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🏦 Bank Loan Manager</h1>
-        <div class="form-group">
-            <label for="loanType">Loan Type</label>
-            <select id="loanType">
-                <option value="Housing Loan">Housing Loan (5.2%, max 25 yrs)</option>
-                <option value="Auto Loan">Auto Loan (7.5%, max 6 yrs)</option>
-                <option value="Personal Loan">Personal Loan (9.6%, max 10 yrs)</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="loanAmount">Loan Amount ($)</label>
-            <input type="number" id="loanAmount" placeholder="e.g., 200000" min="1" step="1000">
-        </div>
-        <div class="form-group">
-            <label for="termYears">Loan Term (Years)</label>
-            <input type="number" id="termYears" placeholder="e.g., 15" min="1">
-        </div>
-        <div class="form-group">
-            <label for="monthlyIncome">Monthly Income ($)</label>
-            <input type="number" id="monthlyIncome" placeholder="e.g., 8000" min="1">
-        </div>
-        <button onclick="calculateLoan()">Calculate Loan</button>
+  <div class="container">
+    <h1>🏦 Bank Loan Manager</h1>
 
-        <div id="result"></div>
+    <div class="form-group">
+      <label for="loanType">Loan Type</label>
+      <select id="loanType">
+        <option value="Housing Loan">Housing Loan (5.2%, max 25 yrs)</option>
+        <option value="Auto Loan">Auto Loan (7.5%, max 6 yrs)</option>
+        <option value="Personal Loan">Personal Loan (9.6%, max 10 yrs)</option>
+      </select>
     </div>
 
-    <script>
-        async function calculateLoan() {
-            const loanType = document.getElementById('loanType').value;
-            const loanAmount = document.getElementById('loanAmount').value;
-            const termYears = document.getElementById('termYears').value;
-            const monthlyIncome = document.getElementById('monthlyIncome').value;
+    <div class="form-group">
+      <label for="loanAmount">Loan Amount ($)</label>
+      <input type="number" id="loanAmount" placeholder="e.g., 200000" min="1" step="1000">
+    </div>
 
-            const resultDiv = document.getElementById('result');
-            resultDiv.style.display = 'none';
+    <div class="form-group">
+      <label for="termYears">Loan Term (Years)</label>
+      <input type="number" id="termYears" placeholder="e.g., 15" min="1">
+    </div>
 
-            const res = await fetch('/api/calculate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ loanType, loanAmount, termYears, monthlyIncome })
-            });
+    <div class="form-group">
+      <label for="monthlyIncome">Monthly Income ($)</label>
+      <input type="number" id="monthlyIncome" placeholder="e.g., 8000" min="1">
+    </div>
 
-            const data = await res.json();
+    <button id="calcBtn">Calculate Loan</button>
 
-            if (!data.success) {
-                resultDiv.className = 'rejected';
-                resultDiv.innerText = data.message;
-                resultDiv.style.display = 'block';
-                return;
-            }
+    <div id="result"></div>
+  </div>
 
-            const isApproved = data.is_approved;
-            resultDiv.className = isApproved ? 'approved' : 'rejected';
-            resultDiv.innerHTML = `
-                <strong>${isApproved ? '✅ Approved!' : '⚠️ Rejected'}</strong><br>
-                Monthly Payment: $${data.monthly_payment.toFixed(2)}<br>
-                Total Interest: $${data.total_interest.toFixed(2)}<br>
-                ${data.message}
-            `;
+  <script>
+    const resultDiv = document.getElementById('result');
 
-            if (!isApproved) {
-                resultDiv.innerHTML += `
-                    <div class="actions">
-                        <button onclick="adjustTerm(${data.max_term})">Max Term (${data.max_term} yrs)</button>
-                        <button onclick="reduceLoan(${data.loan_amount})">Reduce Loan Amount</button>
-                    </div>
-                `;
-            } else {
-                resultDiv.innerHTML += `
-                    <div class="actions">
-                        <button onclick="finalizeLoan(${JSON.stringify({
-                            loan_type: loanType,
-                            loan_amount: parseFloat(loanAmount),
-                            term_years: parseInt(termYears),
-                            monthly_payment: data.monthly_payment,
-                            total_interest: data.total_interest,
-                            is_approved: true
-                        }).replace(/"/g, '&quot;')})">Finalize Loan</button>
-                    </div>
-                `;
-            }
+    document.getElementById('calcBtn').addEventListener('click', calculateLoan);
 
-            resultDiv.style.display = 'block';
+    async function calculateLoan() {
+      const loan_type = document.getElementById('loanType').value;
+      const loan_amount = document.getElementById('loanAmount').value;
+      const term_years = document.getElementById('termYears').value;
+      const monthly_income = document.getElementById('monthlyIncome').value;
+
+      resultDiv.style.display = 'none';
+
+      const res = await fetch('/api/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loan_type, loan_amount, term_years, monthly_income })
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        showError('Unexpected server response.');
+        return;
+      }
+      if (!res.ok || !data.success) {
+        showError(data.message || 'Calculation failed.');
+        return;
+      }
+
+      const isApproved = data.is_approved;
+      const drPct = (data.debt_ratio * 100).toFixed(2);
+
+      resultDiv.className = isApproved ? 'approved' : 'rejected';
+      resultDiv.innerHTML = `
+        <strong>${isApproved ? '✅ Approved!' : '⚠️ Rejected'}</strong><br>
+        <div>Monthly Payment: <strong>$${data.monthly_payment.toFixed(2)}</strong></div>
+        <div>Total Interest: <strong>$${data.total_interest.toFixed(2)}</strong></div>
+        <div class="small">Debt Ratio: <strong>${drPct}%</strong> (must be ≤ 50%)</div>
+        <div class="small">Rate: ${data.rate}% | Term: ${data.current_term} yrs | Max Term: ${data.max_term} yrs</div>
+        <div style="margin-top:8px;">${data.message}</div>
+      `;
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      if (!isApproved) {
+        // Helpful suggestions based on API hints
+        if (data.min_term_for_approval && data.min_term_for_approval > data.current_term) {
+          const btn = document.createElement('button');
+          btn.textContent = `Set to Min Term for Approval (${data.min_term_for_approval} yrs)`;
+          btn.onclick = () => setTerm(data.min_term_for_approval);
+          actions.appendChild(btn);
         }
 
-        function adjustTerm(maxTerm) {
-            document.getElementById('termYears').value = maxTerm;
-        }
+        const maxTermBtn = document.createElement('button');
+        maxTermBtn.textContent = `Max Term (${data.max_term} yrs)`;
+        maxTermBtn.onclick = () => setTerm(data.max_term);
+        actions.appendChild(maxTermBtn);
 
-        function reduceLoan(current) {
-            const reduced = Math.floor(current * 0.8);
-            document.getElementById('loanAmount').value = reduced;
-        }
+        const reduce20Btn = document.createElement('button');
+        reduce20Btn.textContent = 'Reduce Loan by 20%';
+        reduce20Btn.onclick = () => reduceLoan(0.8);
+        actions.appendChild(reduce20Btn);
 
-        async function finalizeLoan(dataStr) {
-            const data = JSON.parse(dataStr.replace(/&quot;/g, '"'));
-            const res = await fetch('/api/finalize', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await res.json();
-            alert(result.message);
+        if (data.max_affordable_loan_for_current_term) {
+          const toAffordableBtn = document.createElement('button');
+          toAffordableBtn.textContent = `Set Affordable Amount ($${Math.floor(data.max_affordable_loan_for_current_term)})`;
+          toAffordableBtn.onclick = () => setLoan(Math.floor(data.max_affordable_loan_for_current_term));
+          actions.appendChild(toAffordableBtn);
         }
-    </script>
+      } else {
+        const finalizeBtn = document.createElement('button');
+        finalizeBtn.textContent = 'Finalize Loan';
+        finalizeBtn.onclick = () => finalizeLoan({
+          loan_type,
+          loan_amount: parseFloat(loan_amount),
+          term_years: parseInt(term_years, 10),
+          monthly_payment: data.monthly_payment,
+          total_interest: data.total_interest,
+          is_approved: true
+        });
+        actions.appendChild(finalizeBtn);
+      }
+
+      resultDiv.appendChild(actions);
+      resultDiv.style.display = 'block';
+    }
+
+    function setTerm(y) { document.getElementById('termYears').value = y; }
+    function setLoan(a) { document.getElementById('loanAmount').value = a; }
+    function reduceLoan(factor) {
+      const current = parseFloat(document.getElementById('loanAmount').value || '0');
+      if (current > 0) document.getElementById('loanAmount').value = Math.floor(current * factor);
+    }
+
+    async function finalizeLoan(payload) {
+      const res = await fetch('/api/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json().catch(() => ({}));
+      alert(result.message || 'Saved.');
+    }
+
+    function showError(msg) {
+      resultDiv.className = 'rejected';
+      resultDiv.textContent = msg;
+      resultDiv.style.display = 'block';
+    }
+  </script>
 </body>
 </html>
